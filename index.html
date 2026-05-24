@@ -1,46 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Camera Optical Receiver</title>
+  <title>Optical Camera Receiver</title>
 
   <style>
+
     body {
-      background: #111;
+      background: #0f1117;
       color: white;
-      text-align: center;
       font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: cyan;
     }
 
     video {
-      width: 300px;
-      border: 3px solid white;
+      width: 320px;
+      border-radius: 20px;
+      border: 4px solid cyan;
       margin-top: 20px;
+    }
+
+    .box {
+
+      background: #1a1d26;
+      padding: 20px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 700px;
+      border-radius: 15px;
     }
 
     #binary {
-      font-size: 28px;
+
       color: lime;
-      margin-top: 20px;
+      font-size: 22px;
       word-wrap: break-word;
+      min-height: 50px;
     }
 
-    #text {
-      font-size: 40px;
+    #decoded {
+
       color: cyan;
+      font-size: 40px;
+      min-height: 60px;
+    }
+
+    #status {
+
+      font-size: 30px;
       margin-top: 20px;
     }
+
+    button {
+
+      padding: 12px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      margin: 10px;
+      cursor: pointer;
+    }
+
+    #resetBtn {
+      background: crimson;
+      color: white;
+    }
+
+    #pauseBtn {
+      background: orange;
+      color: black;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h1>Camera Optical Receiver</h1>
+<h1>Optical Communication Receiver</h1>
 
 <video id="video" autoplay playsinline></video>
 
+<div id="status">
+Waiting...
+</div>
+
+<div class="box">
+
+<h2>Binary Data</h2>
+
 <div id="binary"></div>
 
-<div id="text"></div>
+</div>
+
+<div class="box">
+
+<h2>Decoded Text</h2>
+
+<div id="decoded"></div>
+
+</div>
+
+<button id="resetBtn" onclick="resetData()">
+Reset
+</button>
+
+<button id="pauseBtn" onclick="togglePause()">
+Pause
+</button>
 
 <canvas id="canvas" width="100" height="100" style="display:none;"></canvas>
 
@@ -52,6 +122,26 @@ const ctx = canvas.getContext("2d");
 
 let binary = "";
 let waitingForPulse = false;
+let paused = false;
+
+function resetData() {
+
+  binary = "";
+
+  document.getElementById("binary").innerText = "";
+
+  document.getElementById("decoded").innerText = "";
+
+  document.getElementById("status").innerText = "Reset Complete";
+}
+
+function togglePause() {
+
+  paused = !paused;
+
+  document.getElementById("pauseBtn").innerText =
+    paused ? "Resume" : "Pause";
+}
 
 function binaryToText(binary) {
 
@@ -63,27 +153,39 @@ function binaryToText(binary) {
 
     if (byte.length < 8) continue;
 
-    result += String.fromCharCode(parseInt(byte, 2));
+    let decimal = parseInt(byte, 2);
+
+    result += String.fromCharCode(decimal);
   }
 
   return result;
 }
 
 navigator.mediaDevices.getUserMedia({
+
   video: {
     facingMode: "environment"
   }
+
 })
 
 .then(stream => {
 
   video.srcObject = stream;
 
-  setInterval(scanFrame, 150);
+  setInterval(scanFrame, 250);
+
+})
+
+.catch(err => {
+
+  alert("Camera Error: " + err);
 
 });
 
 function scanFrame() {
+
+  if (paused) return;
 
   ctx.drawImage(video, 0, 0, 100, 100);
 
@@ -106,33 +208,45 @@ function scanFrame() {
   g /= pixels;
   b /= pixels;
 
-  // Detect RED separator
-  if (r > 120 && g < 80 && b < 80) {
+  // BLUE separator detection
+  if (b > 100 && r < 80 && g < 80) {
 
     waitingForPulse = true;
+
+    document.getElementById("status").innerText =
+      "Separator Detected (BLUE)";
+
     return;
   }
 
-  // Only accept pulse AFTER red
   if (waitingForPulse) {
 
     // WHITE = 1
     if (r > 180 && g > 180 && b > 180) {
 
       binary += "1";
+
       waitingForPulse = false;
+
+      document.getElementById("status").innerText =
+        "Detected: 1";
     }
 
     // BLACK = 0
-    else if (r < 50 && g < 50 && b < 50) {
+    else if (r < 60 && g < 60 && b < 60) {
 
       binary += "0";
+
       waitingForPulse = false;
+
+      document.getElementById("status").innerText =
+        "Detected: 0";
     }
 
     document.getElementById("binary").innerText = binary;
 
-    document.getElementById("text").innerText = binaryToText(binary);
+    document.getElementById("decoded").innerText =
+      binaryToText(binary);
   }
 }
 
