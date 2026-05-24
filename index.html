@@ -51,8 +51,16 @@
 
     #status {
 
-      font-size: 30px;
+      font-size: 28px;
       margin-top: 20px;
+      color: orange;
+    }
+
+    #rgb {
+
+      font-size: 20px;
+      margin-top: 10px;
+      color: lightgray;
     }
 
     button {
@@ -86,6 +94,10 @@
 
 <div id="status">
 Waiting...
+</div>
+
+<div id="rgb">
+RGB Values
 </div>
 
 <div class="box">
@@ -132,7 +144,8 @@ function resetData() {
 
   document.getElementById("decoded").innerText = "";
 
-  document.getElementById("status").innerText = "Reset Complete";
+  document.getElementById("status").innerText =
+    "Reset Complete";
 }
 
 function togglePause() {
@@ -173,7 +186,8 @@ navigator.mediaDevices.getUserMedia({
 
   video.srcObject = stream;
 
-  setInterval(scanFrame, 250);
+  // VERY SLOW scanning
+  setInterval(scanFrame, 2000);
 
 })
 
@@ -208,13 +222,16 @@ function scanFrame() {
   g /= pixels;
   b /= pixels;
 
+  document.getElementById("rgb").innerText =
+    `R:${Math.round(r)} G:${Math.round(g)} B:${Math.round(b)}`;
+
   // BLUE separator detection
-  if (b > 100 && r < 80 && g < 80) {
+  if (b > 90 && r < 100 && g < 100) {
 
     waitingForPulse = true;
 
     document.getElementById("status").innerText =
-      "Separator Detected (BLUE)";
+      "BLUE Separator Detected";
 
     return;
   }
@@ -222,7 +239,7 @@ function scanFrame() {
   if (waitingForPulse) {
 
     // WHITE = 1
-    if (r > 180 && g > 180 && b > 180) {
+    if (r > 120 && g > 120 && b > 120) {
 
       binary += "1";
 
@@ -233,7 +250,7 @@ function scanFrame() {
     }
 
     // BLACK = 0
-    else if (r < 60 && g < 60 && b < 60) {
+    else if (r < 80 && g < 80 && b < 80) {
 
       binary += "0";
 
@@ -243,7 +260,8 @@ function scanFrame() {
         "Detected: 0";
     }
 
-    document.getElementById("binary").innerText = binary;
+    document.getElementById("binary").innerText =
+      binary;
 
     document.getElementById("decoded").innerText =
       binaryToText(binary);
