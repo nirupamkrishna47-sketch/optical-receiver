@@ -18,6 +18,7 @@
     }
 
     video {
+
       width: 320px;
       border-radius: 20px;
       border: 4px solid cyan;
@@ -135,6 +136,7 @@ const ctx = canvas.getContext("2d");
 let binary = "";
 let waitingForPulse = false;
 let paused = false;
+let lastDetection = "";
 
 function resetData() {
 
@@ -186,7 +188,6 @@ navigator.mediaDevices.getUserMedia({
 
   video.srcObject = stream;
 
-  // VERY SLOW scanning
   setInterval(scanFrame, 2000);
 
 })
@@ -226,9 +227,11 @@ function scanFrame() {
     `R:${Math.round(r)} G:${Math.round(g)} B:${Math.round(b)}`;
 
   // BLUE separator detection
-  if (b > 90 && r < 100 && g < 100) {
+  if (b > 90 && r < 120 && g < 120) {
 
     waitingForPulse = true;
+
+    lastDetection = "separator";
 
     document.getElementById("status").innerText =
       "BLUE Separator Detected";
@@ -239,9 +242,16 @@ function scanFrame() {
   if (waitingForPulse) {
 
     // WHITE = 1
-    if (r > 120 && g > 120 && b > 120) {
+    if (
+      r > 120 &&
+      g > 120 &&
+      b > 120 &&
+      lastDetection !== "1"
+    ) {
 
       binary += "1";
+
+      lastDetection = "1";
 
       waitingForPulse = false;
 
@@ -250,9 +260,16 @@ function scanFrame() {
     }
 
     // BLACK = 0
-    else if (r < 80 && g < 80 && b < 80) {
+    else if (
+      r < 120 &&
+      g < 120 &&
+      b < 120 &&
+      lastDetection !== "0"
+    ) {
 
       binary += "0";
+
+      lastDetection = "0";
 
       waitingForPulse = false;
 
