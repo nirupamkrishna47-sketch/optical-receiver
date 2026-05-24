@@ -198,7 +198,82 @@ navigator.mediaDevices.getUserMedia({
 
 });
 
+let separatorBrightness = 0;
+
 function scanFrame() {
+
+  if (paused) return;
+
+  ctx.drawImage(video, 0, 0, 100, 100);
+
+  const frame = ctx.getImageData(0, 0, 100, 100);
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  for (let i = 0; i < frame.data.length; i += 4) {
+
+    r += frame.data[i];
+    g += frame.data[i + 1];
+    b += frame.data[i + 2];
+  }
+
+  const pixels = frame.data.length / 4;
+
+  r /= pixels;
+  g /= pixels;
+  b /= pixels;
+
+  const brightness = (r + g + b) / 3;
+
+  document.getElementById("rgb").innerText =
+    `R:${Math.round(r)} G:${Math.round(g)} B:${Math.round(b)} Brightness:${Math.round(brightness)}`;
+
+  // BLUE separator detection
+  if (b > r + 20 && b > g + 20) {
+
+    separatorBrightness = brightness;
+
+    waitingForPulse = true;
+
+    document.getElementById("status").innerText =
+      "BLUE Separator Detected";
+
+    return;
+  }
+
+  if (waitingForPulse) {
+
+    // WHITE = brighter than separator
+    if (brightness > separatorBrightness + 40) {
+
+      binary += "1";
+
+      waitingForPulse = false;
+
+      document.getElementById("status").innerText =
+        "Detected: 1";
+    }
+
+    // BLACK = darker than separator
+    else if (brightness < separatorBrightness - 20) {
+
+      binary += "0";
+
+      waitingForPulse = false;
+
+      document.getElementById("status").innerText =
+        "Detected: 0";
+    }
+
+    document.getElementById("binary").innerText =
+      binary;
+
+    document.getElementById("decoded").innerText =
+      binaryToText(binary);
+  }
+}
 
   if (paused) return;
 
